@@ -23,6 +23,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/chat/room/{roomId}/messages', [ChatController::class, 'messages']);
     Route::post('/chat/room/{roomId}/messages', [ChatController::class, 'newMessage'])
         ->middleware('throttle:60,1');
+    Route::patch('/chat/room/{roomId}/messages/{message}', [ChatController::class, 'updateMessage'])
+        ->middleware('throttle:60,1');
 
     // Direct messages
     Route::get('/users', [UserController::class, 'index']);

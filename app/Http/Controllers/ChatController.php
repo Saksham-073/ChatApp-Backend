@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Events\MessageSent;
+use App\Events\MessageUpdated;
 use App\Http\Resources\ChatMessageResource;
 use App\Models\ChatMessage;
 use App\Models\ChatRoom;
@@ -51,5 +52,26 @@ class ChatController extends Controller
         return (new ChatMessageResource($newMessage))
             ->response()
             ->setStatusCode(201);
+    }
+
+    public function updateMessage(Request $request, $roomId, ChatMessage $message)
+    {
+        abort_unless((int) $message->chat_room_id === (int) $roomId, 404);
+        abort_unless($message->user_id === $request->user()->id, 403);
+        abort_if($message->deleted_at !== null, 409, 'Message was deleted.');
+        abort_if(
+            $message->created_at->lt(now()->subMinutes(ChatMessage::EDIT_WINDOW_MINUTES)),
+            403,
+            'Edit window expired.'
+        );
+
+        $request->validate(['message' => 'required|string|max:2000']);
+
+        $message->update(['message' => $request->message, 'edited_at' => now()]);
+        $message->load('user');
+
+        broadcast(new MessageUpdated($message))->toOthers();
+
+        return new ChatMessageResource($message);
     }
 }
