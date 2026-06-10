@@ -25,6 +25,7 @@ Route::middleware('auth:sanctum')->group(function () {
         ->middleware('throttle:60,1');
     Route::patch('/chat/room/{roomId}/messages/{message}', [ChatController::class, 'updateMessage'])
         ->middleware('throttle:60,1');
+    Route::delete('/chat/room/{roomId}/messages/{message}', [ChatController::class, 'destroyMessage']);
 
     // Direct messages
     Route::get('/users', [UserController::class, 'index']);

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\MessageDeleted;
 use App\Events\MessageSent;
 use App\Events\MessageUpdated;
 use App\Http\Resources\ChatMessageResource;
@@ -73,5 +74,18 @@ class ChatController extends Controller
         broadcast(new MessageUpdated($message))->toOthers();
 
         return new ChatMessageResource($message);
+    }
+
+    public function destroyMessage(Request $request, $roomId, ChatMessage $message)
+    {
+        abort_unless((int) $message->chat_room_id === (int) $roomId, 404);
+        abort_unless($message->user_id === $request->user()->id, 403);
+
+        if ($message->deleted_at === null) {
+            $message->update(['message' => '', 'deleted_at' => now()]);
+            broadcast(new MessageDeleted($message))->toOthers();
+        }
+
+        return response()->noContent();
     }
 }

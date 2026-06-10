@@ -85,4 +85,35 @@ class MessageEditDeleteTest extends TestCase
             'message' => 'Wrong room',
         ])->assertStatus(404);
     }
+
+    public function test_sender_can_delete_anytime_and_content_is_blanked(): void
+    {
+        Sanctum::actingAs($this->alice);
+        $this->travel(2)->days();
+
+        $this->deleteJson("/api/chat/room/{$this->room->id}/messages/{$this->message->id}")
+            ->assertStatus(204);
+
+        $fresh = $this->message->fresh();
+        $this->assertNotNull($fresh->deleted_at);
+        $this->assertSame('', $fresh->message);
+    }
+
+    public function test_delete_is_idempotent(): void
+    {
+        Sanctum::actingAs($this->alice);
+
+        $this->deleteJson("/api/chat/room/{$this->room->id}/messages/{$this->message->id}")
+            ->assertStatus(204);
+        $this->deleteJson("/api/chat/room/{$this->room->id}/messages/{$this->message->id}")
+            ->assertStatus(204);
+    }
+
+    public function test_non_sender_cannot_delete(): void
+    {
+        Sanctum::actingAs($this->bob);
+
+        $this->deleteJson("/api/chat/room/{$this->room->id}/messages/{$this->message->id}")
+            ->assertStatus(403);
+    }
 }
