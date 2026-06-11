@@ -118,4 +118,42 @@ class DirectMessageEditDeleteTest extends TestCase
             ->assertJsonPath('0.last_message.message', '')
             ->assertJsonPath('0.last_message.id', $this->dm->id);
     }
+
+    public function test_message_must_belong_to_conversation_in_url(): void
+    {
+        [$a, $b] = $this->alice->id < $this->eve->id
+            ? [$this->alice->id, $this->eve->id]
+            : [$this->eve->id, $this->alice->id];
+
+        $otherConversation = Conversation::create([
+            'user_one_id' => $a,
+            'user_two_id' => $b,
+        ]);
+
+        Sanctum::actingAs($this->alice);
+
+        $this->patchJson("/api/conversations/{$otherConversation->id}/messages/{$this->dm->id}", [
+            'message' => 'Wrong conversation',
+        ])->assertStatus(404);
+    }
+
+    public function test_editing_deleted_dm_fails(): void
+    {
+        $this->dm->update(['message' => '', 'deleted_at' => now()]);
+        Sanctum::actingAs($this->alice);
+
+        $this->patchJson("/api/conversations/{$this->conversation->id}/messages/{$this->dm->id}", [
+            'message' => 'Resurrect',
+        ])->assertStatus(409);
+    }
+
+    public function test_dm_delete_is_idempotent(): void
+    {
+        Sanctum::actingAs($this->alice);
+
+        $this->deleteJson("/api/conversations/{$this->conversation->id}/messages/{$this->dm->id}")
+            ->assertStatus(204);
+        $this->deleteJson("/api/conversations/{$this->conversation->id}/messages/{$this->dm->id}")
+            ->assertStatus(204);
+    }
 }
