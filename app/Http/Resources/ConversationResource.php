@@ -22,9 +22,11 @@ class ConversationResource extends JsonResource
             'other_user' => new UserResource($other),
             'unread_count' => (int) ($this->unread_count ?? 0),
             'last_message' => $this->whenLoaded('latestMessage', fn () => [
+                'id' => $this->latestMessage->id,
                 'message' => $this->latestMessage->message,
                 'sender_id' => $this->latestMessage->sender_id,
                 'created_at' => $this->latestMessage->created_at,
+                'deleted_at' => $this->latestMessage->deleted_at,
             ]),
         ];
     }

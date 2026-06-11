@@ -19,6 +19,8 @@ class DirectMessageResource extends JsonResource
             'conversation_id' => $this->conversation_id,
             'sender_id' => $this->sender_id,
             'message' => $this->message,
+            'edited_at' => $this->edited_at,
+            'deleted_at' => $this->deleted_at,
             'read_at' => $this->read_at,
             'created_at' => $this->created_at,
             'sender' => new UserResource($this->whenLoaded('sender')),

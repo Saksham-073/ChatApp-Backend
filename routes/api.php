@@ -34,5 +34,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/conversations/{conversation}/messages', [DirectMessageController::class, 'index']);
     Route::post('/conversations/{conversation}/messages', [DirectMessageController::class, 'store'])
         ->middleware('throttle:60,1');
+    Route::patch('/conversations/{conversation}/messages/{message}', [DirectMessageController::class, 'update'])
+        ->middleware('throttle:60,1');
+    Route::delete('/conversations/{conversation}/messages/{message}', [DirectMessageController::class, 'destroy']);
     Route::post('/conversations/{conversation}/read', [DirectMessageController::class, 'markRead']);
 });
