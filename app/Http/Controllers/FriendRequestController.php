@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\FriendRequestAccepted;
 use App\Events\FriendRequestSent;
 use App\Http\Resources\FriendshipResource;
 use App\Models\Friendship;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
 class FriendRequestController extends Controller
@@ -48,6 +50,20 @@ class FriendRequestController extends Controller
         abort_if($existing?->status === 'accepted', 422, 'Already friends.');
         abort_if($existing?->status === 'pending', 422, 'Request already sent.');
 
+        $reverse = Friendship::where('sender_id', $recipientId)
+            ->where('recipient_id', $senderId)
+            ->first();
+
+        if ($reverse) {
+            abort_if($reverse->status === 'accepted', 422, 'Already friends.');
+
+            $reverse->update(['status' => 'accepted']);
+            $reverse->load('sender', 'recipient');
+            broadcast(new FriendRequestAccepted($reverse));
+
+            return new FriendshipResource($reverse);
+        }
+
         $friendship = Friendship::create([
             'sender_id' => $senderId,
             'recipient_id' => $recipientId,
@@ -60,5 +76,17 @@ class FriendRequestController extends Controller
         return (new FriendshipResource($friendship))
             ->response()
             ->setStatusCode(201);
+    }
+
+    public function accept(Request $request, Friendship $friendship)
+    {
+        Gate::authorize('accept', $friendship);
+
+        $friendship->update(['status' => 'accepted']);
+        $friendship->load('sender', 'recipient');
+
+        broadcast(new FriendRequestAccepted($friendship));
+
+        return new FriendshipResource($friendship);
     }
 }
