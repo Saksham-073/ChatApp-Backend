@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\DirectMessageController;
+use App\Http\Controllers\FriendRequestController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -38,4 +39,8 @@ Route::middleware('auth:sanctum')->group(function () {
         ->middleware('throttle:60,1');
     Route::delete('/conversations/{conversation}/messages/{message}', [DirectMessageController::class, 'destroy']);
     Route::post('/conversations/{conversation}/read', [DirectMessageController::class, 'markRead']);
+
+    // Friend requests
+    Route::get('/friend-requests', [FriendRequestController::class, 'index']);
+    Route::post('/friend-requests', [FriendRequestController::class, 'store']);
 });
