@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Events\FriendRequestAccepted;
+use App\Events\FriendRequestCancelled;
 use App\Events\FriendRequestSent;
 use App\Http\Resources\FriendshipResource;
 use App\Models\Friendship;
@@ -88,5 +89,23 @@ class FriendRequestController extends Controller
         broadcast(new FriendRequestAccepted($friendship));
 
         return new FriendshipResource($friendship);
+    }
+
+    public function destroy(Request $request, Friendship $friendship)
+    {
+        Gate::authorize('cancel', $friendship);
+        abort_if($friendship->status !== 'pending', 409, 'Request already resolved.');
+
+        $viewerId = $request->user()->id;
+        $notifyUserId = $friendship->sender_id === $viewerId
+            ? $friendship->recipient_id
+            : $friendship->sender_id;
+        $id = $friendship->id;
+
+        $friendship->delete();
+
+        broadcast(new FriendRequestCancelled($id, $notifyUserId));
+
+        return response()->noContent();
     }
 }

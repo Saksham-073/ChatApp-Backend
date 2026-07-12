@@ -14,4 +14,12 @@ class FriendshipPolicy
     {
         return $friendship->status === 'pending' && $friendship->recipient_id === $user->id;
     }
+
+    /**
+     * Either party of a still-pending request may cancel/decline it.
+     */
+    public function cancel(User $user, Friendship $friendship): bool
+    {
+        return $friendship->sender_id === $user->id || $friendship->recipient_id === $user->id;
+    }
 }
