@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Friendship;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -16,10 +17,15 @@ class ConversationResource extends JsonResource
     {
         $userId = $request->user()->id;
         $other = $this->user_one_id === $userId ? $this->userTwo : $this->userOne;
+        $rel = Friendship::statusBetween($userId, $other->id);
 
         return [
             'id' => $this->id,
-            'other_user' => new UserResource($other),
+            'other_user' => [
+                ...(new UserResource($other))->resolve(),
+                'friendship_status' => $rel['status'],
+                'friendship_id' => $rel['id'],
+            ],
             'unread_count' => (int) ($this->unread_count ?? 0),
             'last_message' => $this->whenLoaded('latestMessage', fn () => [
                 'id' => $this->latestMessage->id,
