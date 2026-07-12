@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Conversation;
 use App\Models\DirectMessage;
+use App\Models\Friendship;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -61,6 +62,9 @@ class DirectMessageTest extends TestCase
 
     public function test_participant_can_send_and_fetch_messages(): void
     {
+        // Sending now requires friendship (Task 7); this test predates that gate.
+        Friendship::create(['sender_id' => $this->alice->id, 'recipient_id' => $this->bob->id, 'status' => 'accepted']);
+
         Sanctum::actingAs($this->alice);
 
         $this->postJson("/api/conversations/{$this->conversation->id}/messages", [

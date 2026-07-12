@@ -27,7 +27,7 @@ class DirectMessageController extends Controller
 
     public function store(Request $request, Conversation $conversation)
     {
-        Gate::authorize('participate', $conversation);
+        Gate::authorize('message', $conversation);
 
         $request->validate(['message' => 'required|string|max:2000']);
 
