@@ -57,7 +57,16 @@ class ConversationController extends Controller
                 403,
                 'You must be friends to start a conversation.'
             );
-            $conv = Conversation::create(['user_one_id' => $a, 'user_two_id' => $b]);
+
+            try {
+                $conv = Conversation::create(['user_one_id' => $a, 'user_two_id' => $b]);
+            } catch (\Illuminate\Database\QueryException $e) {
+                // Lost a race to create the same pair — the winner's row now exists.
+                $conv = Conversation::where(['user_one_id' => $a, 'user_two_id' => $b])->first();
+                if (! $conv) {
+                    throw $e;
+                }
+            }
         }
 
         $conv->load(['userOne:id,name,email', 'userTwo:id,name,email', 'latestMessage']);
