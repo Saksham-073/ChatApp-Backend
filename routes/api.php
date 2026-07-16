@@ -42,6 +42,8 @@ Route::middleware('auth:sanctum')->group(function () {
         ->middleware('throttle:60,1');
     Route::delete('/conversations/{conversation}/messages/{message}', [DirectMessageController::class, 'destroy']);
     Route::post('/conversations/{conversation}/read', [DirectMessageController::class, 'markRead']);
+    Route::post('/conversations/{conversation}/typing', [DirectMessageController::class, 'typing'])
+        ->middleware('throttle:40,1');
 
     // Friend requests
     Route::get('/friend-requests', [FriendRequestController::class, 'index']);

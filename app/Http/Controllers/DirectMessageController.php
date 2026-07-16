@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Events\DirectMessageDeleted;
 use App\Events\DirectMessageSent;
 use App\Events\DirectMessageUpdated;
+use App\Events\DirectUserTyping;
 use App\Http\Resources\DirectMessageResource;
 use App\Models\Conversation;
 use App\Models\DirectMessage;
@@ -89,6 +90,15 @@ class DirectMessageController extends Controller
             $message->update(['message' => '', 'deleted_at' => now()]);
             broadcast(new DirectMessageDeleted($message))->toOthers();
         }
+
+        return response()->noContent();
+    }
+
+    public function typing(Request $request, Conversation $conversation)
+    {
+        Gate::authorize('message', $conversation);
+
+        broadcast(new DirectUserTyping($conversation->id, $request->user()))->toOthers();
 
         return response()->noContent();
     }
