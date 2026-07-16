@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Events\MessageDeleted;
 use App\Events\MessageSent;
 use App\Events\MessageUpdated;
+use App\Events\UserTyping;
 use App\Http\Resources\ChatMessageResource;
 use App\Models\ChatMessage;
 use App\Models\ChatRoom;
@@ -85,6 +86,13 @@ class ChatController extends Controller
             $message->update(['message' => '', 'deleted_at' => now()]);
             broadcast(new MessageDeleted($message))->toOthers();
         }
+
+        return response()->noContent();
+    }
+
+    public function typing(Request $request, $roomId)
+    {
+        broadcast(new UserTyping((int) $roomId, $request->user()))->toOthers();
 
         return response()->noContent();
     }
