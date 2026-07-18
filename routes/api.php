@@ -7,6 +7,7 @@ use App\Http\Controllers\DirectMessageController;
 use App\Http\Controllers\FriendController;
 use App\Http\Controllers\FriendRequestController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\UserKeyController;
 use Illuminate\Support\Facades\Route;
 
 // Public auth routes (throttled to slow brute-force attempts)
@@ -18,6 +19,11 @@ Route::middleware('throttle:10,1')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
+
+    // E2E encryption key escrow
+    Route::get('/me/keys', [UserKeyController::class, 'show']);
+    Route::post('/me/keys', [UserKeyController::class, 'store']);
+    Route::patch('/me/keys', [UserKeyController::class, 'update']);
 
     // Group chat
     Route::get('/chat/rooms', [ChatController::class, 'rooms']);

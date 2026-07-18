@@ -11,8 +11,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password'])]
-#[Hidden(['password', 'remember_token'])]
+#[Fillable(['name', 'email', 'password', 'public_key', 'encrypted_private_key', 'key_salt', 'key_nonce'])]
+#[Hidden(['password', 'remember_token', 'encrypted_private_key', 'key_salt', 'key_nonce'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
