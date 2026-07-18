@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ConversationController;
+use App\Http\Controllers\ConversationKeyController;
 use App\Http\Controllers\DirectMessageController;
 use App\Http\Controllers\FriendController;
 use App\Http\Controllers\FriendRequestController;
@@ -24,6 +25,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me/keys', [UserKeyController::class, 'show']);
     Route::post('/me/keys', [UserKeyController::class, 'store']);
     Route::patch('/me/keys', [UserKeyController::class, 'update']);
+    Route::get('/me/conversation-keys', [ConversationKeyController::class, 'mine']);
 
     // Group chat
     Route::get('/chat/rooms', [ChatController::class, 'rooms']);
@@ -50,6 +52,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/conversations/{conversation}/read', [DirectMessageController::class, 'markRead']);
     Route::post('/conversations/{conversation}/typing', [DirectMessageController::class, 'typing'])
         ->middleware('throttle:40,1');
+    Route::post('/conversations/{conversation}/keys', [ConversationKeyController::class, 'store']);
 
     // Friend requests
     Route::get('/friend-requests', [FriendRequestController::class, 'index']);
