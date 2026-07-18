@@ -74,10 +74,32 @@ class UserKeyTest extends TestCase
 
         Sanctum::actingAs($alice);
 
+        // Check /api/users (UserResource filtered view)
         $res = $this->getJson('/api/users')->assertOk();
         $bobRow = collect($res->json())->firstWhere('id', $bob->id);
         $this->assertArrayNotHasKey('encrypted_private_key', $bobRow);
         $this->assertArrayNotHasKey('key_salt', $bobRow);
         $this->assertArrayNotHasKey('key_nonce', $bobRow);
+    }
+
+    public function test_key_blob_fields_are_hidden_from_authenticated_user_me(): void
+    {
+        $user = User::factory()->create();
+        $user->update([...$this->payload]);
+
+        Sanctum::actingAs($user);
+
+        // Check /api/me (raw model serialization) — exercises #[Hidden] attribute
+        $res = $this->getJson('/api/me')->assertOk();
+        $data = $res->json();
+
+        // public_key SHOULD be present (not hidden)
+        $this->assertArrayHasKey('public_key', $data);
+        $this->assertEquals($this->payload['public_key'], $data['public_key']);
+
+        // Sensitive fields MUST be hidden
+        $this->assertArrayNotHasKey('encrypted_private_key', $data);
+        $this->assertArrayNotHasKey('key_salt', $data);
+        $this->assertArrayNotHasKey('key_nonce', $data);
     }
 }
