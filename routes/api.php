@@ -25,6 +25,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me/keys', [UserKeyController::class, 'show']);
     Route::post('/me/keys', [UserKeyController::class, 'store']);
     Route::patch('/me/keys', [UserKeyController::class, 'update']);
+    Route::post('/me/keys/reset', [UserKeyController::class, 'reset'])
+        ->middleware('throttle:5,1');
     Route::get('/me/conversation-keys', [ConversationKeyController::class, 'mine']);
 
     // Group chat

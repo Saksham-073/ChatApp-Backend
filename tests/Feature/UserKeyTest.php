@@ -3,7 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Events\UserKeysChanged;
+use App\Models\Conversation;
+use App\Models\ConversationKey;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -101,5 +105,49 @@ class UserKeyTest extends TestCase
         $this->assertArrayNotHasKey('encrypted_private_key', $data);
         $this->assertArrayNotHasKey('key_salt', $data);
         $this->assertArrayNotHasKey('key_nonce', $data);
+    }
+
+    public function test_reset_replaces_keys_deletes_wraps_and_notifies_peers(): void
+    {
+        Event::fake([UserKeysChanged::class]);
+
+        $alice = User::factory()->create();
+        $bob = User::factory()->create();
+        [$a, $b] = $alice->id < $bob->id ? [$alice->id, $bob->id] : [$bob->id, $alice->id];
+        $conversation = Conversation::create(['user_one_id' => $a, 'user_two_id' => $b]);
+
+        Sanctum::actingAs($alice);
+        $this->postJson('/api/me/keys', $this->payload)->assertStatus(201);
+
+        ConversationKey::create(['conversation_id' => $conversation->id, 'user_id' => $alice->id, 'wrapped_key' => 'd3JhcC1hbGljZQ==']);
+        ConversationKey::create(['conversation_id' => $conversation->id, 'user_id' => $bob->id, 'wrapped_key' => 'd3JhcC1ib2I=']);
+
+        $newKeys = [
+            'public_key' => 'bmV3LXB1Yg==',
+            'encrypted_private_key' => 'bmV3LWJsb2I=',
+            'key_salt' => 'bmV3LXNhbHQ=',
+            'key_nonce' => 'bmV3LW5vbmNl',
+        ];
+
+        $this->postJson('/api/me/keys/reset', $newKeys)
+            ->assertOk()
+            ->assertJsonPath('public_key', 'bmV3LXB1Yg==');
+
+        // Alice's wrap deleted, Bob's intact
+        $this->assertSame(0, ConversationKey::where('user_id', $alice->id)->count());
+        $this->assertSame(1, ConversationKey::where('user_id', $bob->id)->count());
+
+        Event::assertDispatched(UserKeysChanged::class, function (UserKeysChanged $event) use ($alice, $bob) {
+            return $event->userId === $alice->id
+                && $event->publicKey === 'bmV3LXB1Yg=='
+                && $event->peerIds === [$bob->id];
+        });
+    }
+
+    public function test_reset_requires_prior_enrollment(): void
+    {
+        Sanctum::actingAs(User::factory()->create());
+
+        $this->postJson('/api/me/keys/reset', $this->payload)->assertStatus(404);
     }
 }
