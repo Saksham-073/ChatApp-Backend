@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Events\UserKeysChanged;
 use App\Models\Conversation;
 use App\Models\ConversationKey;
@@ -80,9 +81,12 @@ class UserKeyController extends Controller
             ->unique()
             ->values();
 
-        ConversationKey::where('user_id', $user->id)->delete();
-
-        $user->update($request->only(['public_key', 'encrypted_private_key', 'key_salt', 'key_nonce']));
+        // Atomic: a failure between the wrap deletion and the escrow swap would
+        // strand the user with old wraps sealed to a key that no longer exists
+        DB::transaction(function () use ($user, $request) {
+            ConversationKey::where('user_id', $user->id)->delete();
+            $user->update($request->only(['public_key', 'encrypted_private_key', 'key_salt', 'key_nonce']));
+        });
 
         if ($peerIds->isNotEmpty()) {
             broadcast(new UserKeysChanged($user->id, $user->public_key, $peerIds->all()))->toOthers();
