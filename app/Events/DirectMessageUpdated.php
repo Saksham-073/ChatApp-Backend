@@ -27,6 +27,8 @@ class DirectMessageUpdated implements ShouldBroadcast
             'conversation_id' => $this->dm->conversation_id,
             'sender_id' => $this->dm->sender_id,
             'message' => $this->dm->message,
+            'nonce' => $this->dm->nonce,
+            'enc_version' => $this->dm->enc_version,
             'edited_at' => $this->dm->edited_at,
             'deleted_at' => $this->dm->deleted_at,
             'created_at' => $this->dm->created_at,

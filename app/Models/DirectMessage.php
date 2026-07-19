@@ -8,9 +8,9 @@ class DirectMessage extends Model
 {
     public const EDIT_WINDOW_MINUTES = 15;
 
-    protected $fillable = ['conversation_id', 'sender_id', 'message', 'read_at', 'edited_at', 'deleted_at'];
+    protected $fillable = ['conversation_id', 'sender_id', 'message', 'read_at', 'edited_at', 'deleted_at', 'nonce', 'enc_version'];
 
-    protected $casts = ['read_at' => 'datetime', 'edited_at' => 'datetime', 'deleted_at' => 'datetime'];
+    protected $casts = ['read_at' => 'datetime', 'edited_at' => 'datetime', 'deleted_at' => 'datetime', 'enc_version' => 'integer'];
 
     public function sender()
     {

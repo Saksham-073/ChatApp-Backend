@@ -37,6 +37,8 @@ class DirectMessageSent implements ShouldBroadcast
             'conversation_id' => $this->dm->conversation_id,
             'sender_id' => $this->dm->sender_id,
             'message' => $this->dm->message,
+            'nonce' => $this->dm->nonce,
+            'enc_version' => $this->dm->enc_version,
             'created_at' => $this->dm->created_at,
             'sender' => $this->dm->sender,
         ];

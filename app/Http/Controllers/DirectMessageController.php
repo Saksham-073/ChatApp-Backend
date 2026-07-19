@@ -30,11 +30,21 @@ class DirectMessageController extends Controller
     {
         Gate::authorize('message', $conversation);
 
-        $request->validate(['message' => 'required|string|max:2000']);
+        $encVersion = (int) $request->input('enc_version', 0);
+
+        $request->validate([
+            'message' => ['required', 'string', $encVersion === 1 ? 'max:4096' : 'max:2000'],
+            'enc_version' => 'sometimes|integer|in:0,1',
+            'nonce' => 'sometimes|string|max:64',
+        ]);
+        abort_if($encVersion === 1 && ! $request->filled('nonce'), 422, 'Nonce is required for encrypted messages.');
+        abort_if($encVersion === 0 && $request->filled('nonce'), 422, 'Nonce is only valid for encrypted messages.');
 
         $dm = $conversation->messages()->create([
             'sender_id' => $request->user()->id,
             'message' => $request->message,
+            'nonce' => $encVersion === 1 ? $request->nonce : null,
+            'enc_version' => $encVersion,
         ]);
 
         $dm->load('sender');
@@ -70,9 +80,23 @@ class DirectMessageController extends Controller
             'Edit window expired.'
         );
 
-        $request->validate(['message' => 'required|string|max:2000']);
+        $encVersion = (int) $request->input('enc_version', 0);
 
-        $message->update(['message' => $request->message, 'edited_at' => now()]);
+        $request->validate([
+            'message' => ['required', 'string', $encVersion === 1 ? 'max:4096' : 'max:2000'],
+            'enc_version' => 'sometimes|integer|in:0,1',
+            'nonce' => 'sometimes|string|max:64',
+        ]);
+        abort_if($encVersion === 1 && ! $request->filled('nonce'), 422, 'Nonce is required for encrypted messages.');
+        abort_if($encVersion === 0 && $request->filled('nonce'), 422, 'Nonce is only valid for encrypted messages.');
+        abort_if($message->enc_version === 1 && $encVersion === 0, 422, 'Cannot downgrade an encrypted message to plaintext.');
+
+        $message->update([
+            'message' => $request->message,
+            'nonce' => $encVersion === 1 ? $request->nonce : null,
+            'enc_version' => $encVersion,
+            'edited_at' => now(),
+        ]);
         $message->load('sender');
 
         broadcast(new DirectMessageUpdated($message))->toOthers();

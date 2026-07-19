@@ -18,7 +18,7 @@ class ConversationController extends Controller
         $conversations = Conversation::where(function ($q) use ($userId) {
             $q->where('user_one_id', $userId)->orWhere('user_two_id', $userId);
         })
-            ->with(['userOne:id,name,email', 'userTwo:id,name,email', 'latestMessage'])
+            ->with(['userOne:id,name,email,public_key', 'userTwo:id,name,email,public_key', 'latestMessage'])
             ->withCount(['messages as unread_count' => function ($q) use ($userId) {
                 $q->whereNull('read_at')->where('sender_id', '!=', $userId);
             }])
@@ -69,7 +69,7 @@ class ConversationController extends Controller
             }
         }
 
-        $conv->load(['userOne:id,name,email', 'userTwo:id,name,email', 'latestMessage']);
+        $conv->load(['userOne:id,name,email,public_key', 'userTwo:id,name,email,public_key', 'latestMessage']);
         $conv->loadCount(['messages as unread_count' => function ($q) use ($userId) {
             $q->whereNull('read_at')->where('sender_id', '!=', $userId);
         }]);

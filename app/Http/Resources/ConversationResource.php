@@ -30,6 +30,8 @@ class ConversationResource extends JsonResource
             'last_message' => $this->whenLoaded('latestMessage', fn () => [
                 'id' => $this->latestMessage->id,
                 'message' => $this->latestMessage->message,
+                'nonce' => $this->latestMessage->nonce,
+                'enc_version' => $this->latestMessage->enc_version,
                 'sender_id' => $this->latestMessage->sender_id,
                 'created_at' => $this->latestMessage->created_at,
                 'deleted_at' => $this->latestMessage->deleted_at,
