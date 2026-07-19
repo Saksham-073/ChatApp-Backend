@@ -113,6 +113,39 @@ class EncryptedMessageTest extends TestCase
             ->assertJsonPath('enc_version', 1);
     }
 
+    public function test_plaintext_message_over_2000_chars_rejected(): void
+    {
+        Sanctum::actingAs($this->alice);
+
+        $this->postJson($this->url(), ['message' => str_repeat('a', 2001)])
+            ->assertStatus(422);
+    }
+
+    public function test_encrypted_message_cap_is_4096(): void
+    {
+        Sanctum::actingAs($this->alice);
+
+        $this->postJson($this->url(), [
+            'message' => str_repeat('a', 4096),
+            'nonce' => 'bm9uY2UtMjRieXRl',
+            'enc_version' => 1,
+        ])->assertStatus(201);
+
+        $this->postJson($this->url(), [
+            'message' => str_repeat('a', 4097),
+            'nonce' => 'bm9uY2UtMjRieXRl',
+            'enc_version' => 1,
+        ])->assertStatus(422);
+    }
+
+    public function test_unknown_enc_version_rejected(): void
+    {
+        Sanctum::actingAs($this->alice);
+
+        $this->postJson($this->url(), ['message' => 'x', 'enc_version' => 2])
+            ->assertStatus(422);
+    }
+
     public function test_users_listing_exposes_public_key(): void
     {
         Sanctum::actingAs($this->alice);

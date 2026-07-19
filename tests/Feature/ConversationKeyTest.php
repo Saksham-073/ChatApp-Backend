@@ -129,4 +129,24 @@ class ConversationKeyTest extends TestCase
             ->assertJsonPath('0.conversation_id', $this->conversation->id)
             ->assertJsonPath('0.wrapped_key', 'd3JhcC1hbGljZQ==');
     }
+
+    public function test_existing_peer_wrap_cannot_be_overwritten(): void
+    {
+        Sanctum::actingAs($this->alice);
+        $this->postJson("/api/conversations/{$this->conversation->id}/keys", $this->bothWraps())
+            ->assertStatus(201);
+
+        $original = ConversationKey::where('user_id', $this->bob->id)->value('wrapped_key');
+
+        // Attacker-style resubmission: a different wrap for a peer who already has one
+        $this->postJson("/api/conversations/{$this->conversation->id}/keys", ['keys' => [
+            ['user_id' => $this->bob->id, 'wrapped_key' => 'QVRUQUNLRVItd3JhcA=='],
+        ]])->assertStatus(409);
+
+        $this->assertSame(
+            $original,
+            ConversationKey::where('user_id', $this->bob->id)->value('wrapped_key'),
+            'A stored peer wrap must never be overwritten.'
+        );
+    }
 }
