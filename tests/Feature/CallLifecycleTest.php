@@ -44,8 +44,8 @@ class CallLifecycleTest extends TestCase
             'type' => 'video',
         ]);
 
-        $res->assertCreated()->assertJsonPath('data.status', 'ringing')
-            ->assertJsonPath('data.callee_id', $this->bob->id);
+        $res->assertCreated()->assertJsonPath('status', 'ringing')
+            ->assertJsonPath('callee_id', $this->bob->id);
         Event::assertDispatched(CallInitiated::class);
     }
 
@@ -90,7 +90,7 @@ class CallLifecycleTest extends TestCase
         $call = $this->ringingCall();
 
         $this->actingAs($this->bob)->postJson("/api/calls/{$call->id}/accept")
-            ->assertOk()->assertJsonPath('data.status', 'ongoing');
+            ->assertOk()->assertJsonPath('status', 'ongoing');
         $this->assertNotNull($call->fresh()->answered_at);
         Event::assertDispatched(CallAccepted::class);
     }

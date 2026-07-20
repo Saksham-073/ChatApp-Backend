@@ -50,7 +50,7 @@ class CallController extends Controller
 
         broadcast(new CallInitiated($call));
 
-        return response()->json(['data' => new CallResource($call)], 201);
+        return (new CallResource($call))->response()->setStatusCode(201);
     }
 
     public function accept(Request $request, Call $call)
@@ -61,7 +61,7 @@ class CallController extends Controller
         $call->update(['status' => 'ongoing', 'answered_at' => now(), 'last_seen_at' => now()]);
         broadcast(new CallAccepted($call))->toOthers();
 
-        return response()->json(['data' => new CallResource($call->fresh()->load(['caller', 'callee']))]);
+        return new CallResource($call->load(['caller', 'callee']));
     }
 
     public function decline(Request $request, Call $call)
