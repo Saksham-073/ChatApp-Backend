@@ -101,4 +101,66 @@ class CallController extends Controller
 
         return new CallResource($call->load(['caller', 'callee']));
     }
+
+    public function heartbeat(Request $request, Call $call)
+    {
+        abort_unless($call->isParticipant($request->user()->id), 403);
+
+        if ($call->status === 'ongoing') {
+            $call->update(['last_seen_at' => now()]);
+        }
+
+        return response()->noContent();
+    }
+
+    public function seen(Request $request, Call $call)
+    {
+        abort_unless($call->callee_id === $request->user()->id, 403);
+
+        if ($call->status === 'missed' && $call->seen_at === null) {
+            $call->update(['seen_at' => now()]);
+        }
+
+        return response()->noContent();
+    }
+
+    public function missed(Request $request)
+    {
+        $calls = Call::with(['caller', 'callee'])
+            ->where('callee_id', $request->user()->id)
+            ->where('status', 'missed')
+            ->whereNull('seen_at')
+            ->orderByDesc('id')
+            ->get();
+
+        return response()->json(['data' => CallResource::collection($calls)]);
+    }
+
+    public function history(Request $request, Conversation $conversation)
+    {
+        Gate::authorize('participate', $conversation);
+
+        $page = Call::with(['caller', 'callee'])
+            ->where('conversation_id', $conversation->id)
+            ->whereNotIn('status', ['ringing', 'ongoing'])
+            ->orderByDesc('id')
+            ->cursorPaginate(50);
+
+        return CallResource::collection($page);
+    }
+
+    public function iceServers()
+    {
+        $servers = [['urls' => 'stun:stun.l.google.com:19302']];
+
+        if (config('services.turn.url')) {
+            $servers[] = [
+                'urls' => config('services.turn.url'),
+                'username' => config('services.turn.username'),
+                'credential' => config('services.turn.credential'),
+            ];
+        }
+
+        return response()->json(['iceServers' => $servers]);
+    }
 }

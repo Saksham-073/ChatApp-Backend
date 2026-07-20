@@ -72,4 +72,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/calls/{call}/accept', [CallController::class, 'accept']);
     Route::post('/calls/{call}/decline', [CallController::class, 'decline']);
     Route::post('/calls/{call}/end', [CallController::class, 'end']);
+    Route::post('/calls/{call}/heartbeat', [CallController::class, 'heartbeat'])->middleware('throttle:60,1');
+    Route::post('/calls/{call}/seen', [CallController::class, 'seen']);
+    Route::get('/calls/missed', [CallController::class, 'missed']);
+    Route::get('/conversations/{conversation}/calls', [CallController::class, 'history']);
+    Route::get('/ice-servers', [CallController::class, 'iceServers']);
 });
