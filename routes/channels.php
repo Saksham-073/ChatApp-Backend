@@ -17,3 +17,9 @@ Broadcast::channel('conversation.{conversationId}', function ($user, $conversati
 Broadcast::channel('user.{id}', function ($user, $id) {
     return (int) $user->id === (int) $id;
 });
+
+Broadcast::channel('call.{callId}', function ($user, $callId) {
+    $call = \App\Models\Call::find((int) $callId);
+
+    return $call && $call->isParticipant($user->id);
+});
