@@ -64,6 +64,46 @@ class CallLifecycleTest extends TestCase
         ])->assertStatus(409);
     }
 
+    public function test_initiate_rejected_when_caller_busy_with_third_party(): void
+    {
+        $carol = User::factory()->create();
+        $otherConv = Conversation::factory()->create([
+            'user_one_id' => $this->alice->id,
+            'user_two_id' => $carol->id,
+        ]);
+        Call::factory()->create([
+            'conversation_id' => $otherConv->id,
+            'caller_id' => $this->alice->id,
+            'callee_id' => $carol->id,
+            'status' => 'ongoing',
+        ]);
+
+        $this->actingAs($this->alice)->postJson('/api/calls', [
+            'conversation_id' => $this->conv->id,
+            'type' => 'audio',
+        ])->assertStatus(409);
+    }
+
+    public function test_initiate_rejected_when_callee_busy_with_third_party(): void
+    {
+        $carol = User::factory()->create();
+        $otherConv = Conversation::factory()->create([
+            'user_one_id' => $this->bob->id,
+            'user_two_id' => $carol->id,
+        ]);
+        Call::factory()->create([
+            'conversation_id' => $otherConv->id,
+            'caller_id' => $carol->id,
+            'callee_id' => $this->bob->id,
+            'status' => 'ongoing',
+        ]);
+
+        $this->actingAs($this->alice)->postJson('/api/calls', [
+            'conversation_id' => $this->conv->id,
+            'type' => 'audio',
+        ])->assertStatus(409);
+    }
+
     public function test_non_participant_cannot_initiate(): void
     {
         $eve = User::factory()->create();
@@ -153,5 +193,15 @@ class CallLifecycleTest extends TestCase
 
         $this->actingAs($this->bob)->postJson("/api/calls/{$call->id}/accept")
             ->assertStatus(409);
+    }
+
+    public function test_end_on_already_final_call_is_idempotent(): void
+    {
+        $call = $this->ringingCall();
+        $call->update(['status' => 'declined', 'ended_at' => now()]);
+
+        $this->actingAs($this->bob)->postJson("/api/calls/{$call->id}/end")
+            ->assertOk()->assertJsonPath('status', 'declined');
+        $this->assertSame('declined', $call->fresh()->status);
     }
 }
