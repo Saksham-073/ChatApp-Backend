@@ -133,7 +133,7 @@ class CallController extends Controller
             ->orderByDesc('id')
             ->get();
 
-        return response()->json(['data' => CallResource::collection($calls)]);
+        return CallResource::collection($calls);
     }
 
     public function history(Request $request, Conversation $conversation)

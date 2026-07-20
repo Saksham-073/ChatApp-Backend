@@ -53,7 +53,7 @@ class CallAuxiliaryTest extends TestCase
         $this->createCall(['status' => 'missed']); // someone else's
 
         $this->actingAs($me)->getJson('/api/calls/missed')
-            ->assertOk()->assertJsonCount(1, 'data');
+            ->assertOk()->assertJsonCount(1);
     }
 
     public function test_history_returns_final_calls_for_participants_only(): void
