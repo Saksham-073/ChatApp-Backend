@@ -101,4 +101,30 @@ class CallAuxiliaryTest extends TestCase
         Event::assertDispatched(CallMissed::class, 1);
         Event::assertDispatched(CallEnded::class, 2);
     }
+
+    public function test_ice_servers_includes_turn_when_configured(): void
+    {
+        config([
+            'services.turn.url' => 'turn:turn.example.com:3478',
+            'services.turn.username' => 'testuser',
+            'services.turn.credential' => 'testcred',
+        ]);
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->getJson('/api/ice-servers')
+            ->assertOk()
+            ->assertJsonPath('iceServers.0.urls', 'stun:stun.l.google.com:19302')
+            ->assertJsonPath('iceServers.1.urls', 'turn:turn.example.com:3478')
+            ->assertJsonPath('iceServers.1.username', 'testuser')
+            ->assertJsonPath('iceServers.1.credential', 'testcred');
+    }
+
+    public function test_heartbeat_is_noop_when_call_not_ongoing(): void
+    {
+        $call = $this->createCall(['status' => 'ringing', 'last_seen_at' => null]);
+
+        $this->actingAs($call->caller)->postJson("/api/calls/{$call->id}/heartbeat")
+            ->assertNoContent();
+        $this->assertNull($call->fresh()->last_seen_at);
+    }
 }
