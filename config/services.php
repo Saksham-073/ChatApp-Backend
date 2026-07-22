@@ -41,4 +41,8 @@ return [
         'credential' => env('TURN_CREDENTIAL'),
     ],
 
+    'cron' => [
+        'secret' => env('CRON_SECRET'),
+    ],
+
 ];
