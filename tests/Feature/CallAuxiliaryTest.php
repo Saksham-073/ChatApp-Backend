@@ -9,6 +9,7 @@ use App\Models\Conversation;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class CallAuxiliaryTest extends TestCase
@@ -117,6 +118,55 @@ class CallAuxiliaryTest extends TestCase
             ->assertJsonPath('iceServers.1.urls', 'turn:turn.example.com:3478')
             ->assertJsonPath('iceServers.1.username', 'testuser')
             ->assertJsonPath('iceServers.1.credential', 'testcred');
+    }
+
+    public function test_ice_servers_uses_cloudflare_when_configured(): void
+    {
+        config([
+            'services.cloudflare_turn.key_id' => 'test-key-id',
+            'services.cloudflare_turn.api_token' => 'test-api-token',
+        ]);
+        Http::fake([
+            'rtc.live.cloudflare.com/*' => Http::response([
+                'iceServers' => [
+                    ['urls' => ['stun:stun.cloudflare.com:3478']],
+                    [
+                        'urls' => ['turn:turn.cloudflare.com:3478?transport=udp'],
+                        'username' => 'cf-user',
+                        'credential' => 'cf-cred',
+                    ],
+                ],
+            ], 201),
+        ]);
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->getJson('/api/ice-servers')
+            ->assertOk()
+            ->assertJsonPath('iceServers.0.urls', ['stun:stun.cloudflare.com:3478'])
+            ->assertJsonPath('iceServers.1.username', 'cf-user')
+            ->assertJsonPath('iceServers.1.credential', 'cf-cred');
+
+        Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
+            return $request->url() === 'https://rtc.live.cloudflare.com/v1/turn/keys/test-key-id/credentials/generate-ice-servers'
+                && $request->hasHeader('Authorization', 'Bearer test-api-token')
+                && $request['ttl'] === 86400;
+        });
+    }
+
+    public function test_ice_servers_falls_back_to_stun_when_cloudflare_fails(): void
+    {
+        config([
+            'services.cloudflare_turn.key_id' => 'test-key-id',
+            'services.cloudflare_turn.api_token' => 'test-api-token',
+        ]);
+        Http::fake([
+            'rtc.live.cloudflare.com/*' => Http::response(['error' => 'invalid token'], 401),
+        ]);
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->getJson('/api/ice-servers')
+            ->assertOk()
+            ->assertJsonPath('iceServers.0.urls', 'stun:stun.l.google.com:19302');
     }
 
     public function test_heartbeat_is_noop_when_call_not_ongoing(): void

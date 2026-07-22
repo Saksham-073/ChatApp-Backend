@@ -12,6 +12,8 @@ use App\Models\Call;
 use App\Models\Conversation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class CallController extends Controller
 {
@@ -151,6 +153,17 @@ class CallController extends Controller
 
     public function iceServers()
     {
+        $keyId = config('services.cloudflare_turn.key_id');
+        $apiToken = config('services.cloudflare_turn.api_token');
+
+        if ($keyId && $apiToken) {
+            $servers = $this->fetchCloudflareIceServers($keyId, $apiToken);
+
+            if ($servers !== null) {
+                return response()->json(['iceServers' => $servers]);
+            }
+        }
+
         $servers = [['urls' => 'stun:stun.l.google.com:19302']];
 
         if (config('services.turn.url')) {
@@ -162,5 +175,36 @@ class CallController extends Controller
         }
 
         return response()->json(['iceServers' => $servers]);
+    }
+
+    /**
+     * Fetch short-lived TURN credentials from Cloudflare Realtime.
+     * Returns null on any failure so the caller can fall back to
+     * STUN-only (logged, so a bad token doesn't fail silently as a 200).
+     */
+    private function fetchCloudflareIceServers(string $keyId, string $apiToken): ?array
+    {
+        try {
+            $response = Http::withToken($apiToken)
+                ->timeout(5)
+                ->post("https://rtc.live.cloudflare.com/v1/turn/keys/{$keyId}/credentials/generate-ice-servers", [
+                    'ttl' => 86400,
+                ]);
+
+            $servers = $response->json('iceServers');
+
+            if ($response->successful() && is_array($servers)) {
+                return $servers;
+            }
+
+            Log::warning('Cloudflare TURN credential fetch failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Cloudflare TURN credential fetch threw', ['message' => $e->getMessage()]);
+        }
+
+        return null;
     }
 }
