@@ -24,7 +24,7 @@ class DirectMessageSent implements ShouldBroadcast
 
         return [
             new PrivateChannel('conversation.'.$this->dm->conversation_id),
-            // Recipient's personal channel — reaches them even when they have
+            // Recipient's personal channel, which reaches them even when they have
             // never seen this conversation and so aren't subscribed to it yet
             new PrivateChannel('user.'.$recipientId),
         ];

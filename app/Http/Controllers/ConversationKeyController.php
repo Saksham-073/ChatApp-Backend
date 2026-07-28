@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Conversation;
 use App\Models\ConversationKey;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -43,13 +44,13 @@ class ConversationKeyController extends Controller
 
         $toInsert = $submitted->filter(fn ($k) => ! $existingIds->contains((int) $k['user_id']));
 
-        // Nothing new to insert — caller lost a creation race or repeated a re-wrap
+        // Nothing new to insert: caller lost a creation race or repeated a re-wrap
         abort_if($toInsert->isEmpty(), 409, 'Conversation key already exists.');
 
         try {
             // Transaction so a mid-loop unique-index collision (concurrent creation
             // submitting rows in a different order) rolls back ALL of this request's
-            // inserts — a partial insert would leave the two participants holding
+            // inserts, since a partial insert would leave the two participants holding
             // wraps of two different conversation keys.
             $created = DB::transaction(fn () => $toInsert->map(fn ($k) => ConversationKey::create([
                 'conversation_id' => $conversation->id,
@@ -57,7 +58,7 @@ class ConversationKeyController extends Controller
                 'key_version' => 1,
                 'wrapped_key' => $k['wrapped_key'],
             ])));
-        } catch (\Illuminate\Database\QueryException) {
+        } catch (QueryException) {
             // Unique-index race: another request inserted between our check and write
             abort(409, 'Conversation key already exists.');
         }

@@ -10,7 +10,7 @@ class CronController extends Controller
     /**
      * External-cron entry point for scheduled tasks on hosts without a
      * native scheduler (e.g. Render's free tier). Token-gated since it's
-     * unauthenticated by design — pinged by an external cron service.
+     * unauthenticated by design (pinged by an external cron service).
      */
     public function sweepCalls(Request $request)
     {

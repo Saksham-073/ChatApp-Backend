@@ -6,6 +6,7 @@ use App\Http\Resources\ConversationResource;
 use App\Models\Conversation;
 use App\Models\DirectMessage;
 use App\Models\Friendship;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -60,8 +61,8 @@ class ConversationController extends Controller
 
             try {
                 $conv = Conversation::create(['user_one_id' => $a, 'user_two_id' => $b]);
-            } catch (\Illuminate\Database\QueryException $e) {
-                // Lost a race to create the same pair — the winner's row now exists.
+            } catch (QueryException $e) {
+                // Lost a race to create the same pair; the winner's row now exists.
                 $conv = Conversation::where(['user_one_id' => $a, 'user_two_id' => $b])->first();
                 if (! $conv) {
                     throw $e;

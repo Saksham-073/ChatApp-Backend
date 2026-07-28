@@ -18,7 +18,7 @@ class ConversationPolicy
     }
 
     /**
-     * Sending requires participation AND friendship — this is the actual
+     * Sending requires participation AND friendship. This is the actual
      * enforcement point for "must be friends to message".
      */
     public function message(User $user, Conversation $conversation): bool

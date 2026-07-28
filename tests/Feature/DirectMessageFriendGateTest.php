@@ -46,8 +46,8 @@ class DirectMessageFriendGateTest extends TestCase
 
         Sanctum::actingAs($alice);
 
-        // POST /conversations for the same pair returns the existing conversation, not 403 —
-        // it's not creating anything new.
+        // POST /conversations for the same pair returns the existing conversation, not 403,
+        // because it's not creating anything new.
         $this->postJson('/api/conversations', ['user_id' => $bob->id])
             ->assertStatus(201)
             ->assertJsonPath('id', $conversation->id);

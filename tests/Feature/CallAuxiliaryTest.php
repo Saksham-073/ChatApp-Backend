@@ -5,9 +5,9 @@ namespace Tests\Feature;
 use App\Events\CallEnded;
 use App\Events\CallMissed;
 use App\Models\Call;
-use App\Models\Conversation;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -50,7 +50,7 @@ class CallAuxiliaryTest extends TestCase
         $me = User::factory()->create();
         $this->createCall(['callee_id' => $me->id, 'status' => 'missed']);
         $this->createCall(['callee_id' => $me->id, 'status' => 'missed', 'seen_at' => now()]);
-        $this->createCall(['caller_id' => $me->id, 'status' => 'missed']); // I was caller — not mine to see
+        $this->createCall(['caller_id' => $me->id, 'status' => 'missed']); // I was caller, not mine to see
         $this->createCall(['status' => 'missed']); // someone else's
 
         $this->actingAs($me)->getJson('/api/calls/missed')
@@ -146,7 +146,7 @@ class CallAuxiliaryTest extends TestCase
             ->assertJsonPath('iceServers.1.username', 'cf-user')
             ->assertJsonPath('iceServers.1.credential', 'cf-cred');
 
-        Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
+        Http::assertSent(function (Request $request) {
             return $request->url() === 'https://rtc.live.cloudflare.com/v1/turn/keys/test-key-id/credentials/generate-ice-servers'
                 && $request->hasHeader('Authorization', 'Bearer test-api-token')
                 && $request['ttl'] === 86400;

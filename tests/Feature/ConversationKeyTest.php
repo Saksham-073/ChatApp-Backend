@@ -100,7 +100,7 @@ class ConversationKeyTest extends TestCase
         // Simulate bob's reset: his wrap row was deleted
         ConversationKey::where('user_id', $this->bob->id)->delete();
 
-        // Alice re-wraps the CK for bob's new key — single-entry insert succeeds
+        // Alice re-wraps the CK for bob's new key; single-entry insert succeeds
         $this->postJson("/api/conversations/{$this->conversation->id}/keys", ['keys' => [
             ['user_id' => $this->bob->id, 'wrapped_key' => 'bmV3LXdyYXAtYm9i'],
         ]])->assertStatus(201);

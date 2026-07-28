@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Call;
 use App\Models\Conversation;
 use Illuminate\Support\Facades\Broadcast;
 
@@ -13,13 +14,13 @@ Broadcast::channel('conversation.{conversationId}', function ($user, $conversati
     return $conv && ($conv->user_one_id === $user->id || $conv->user_two_id === $user->id);
 });
 
-// Personal notification channel — only the user themselves may listen
+// Personal notification channel: only the user themselves may listen
 Broadcast::channel('user.{id}', function ($user, $id) {
     return (int) $user->id === (int) $id;
 });
 
 Broadcast::channel('call.{callId}', function ($user, $callId) {
-    $call = \App\Models\Call::find((int) $callId);
+    $call = Call::find((int) $callId);
 
     return $call && $call->isParticipant($user->id);
 });

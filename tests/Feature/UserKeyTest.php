@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
 use App\Events\UserKeysChanged;
 use App\Models\Conversation;
 use App\Models\ConversationKey;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Laravel\Sanctum\Sanctum;
@@ -93,7 +93,7 @@ class UserKeyTest extends TestCase
 
         Sanctum::actingAs($user);
 
-        // Check /api/me (raw model serialization) — exercises #[Hidden] attribute
+        // Check /api/me (raw model serialization) to exercise the #[Hidden] attribute
         $res = $this->getJson('/api/me')->assertOk();
         $data = $res->json();
 
